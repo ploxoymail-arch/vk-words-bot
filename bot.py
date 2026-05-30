@@ -6,7 +6,9 @@ import asyncio
 import dotenv
 import os
 from mistralai.client import MistralClient
-import re  # Модуль для проверки, что слово состоит только из русских букв
+from mistralai.models import UserMessage
+import requests
+import re
 
 def main():
     dotenv.load_dotenv()
@@ -29,7 +31,7 @@ def main():
     is_game_started = False
     used_words = set()
     last_bot_word = None
-    mistral = Mistral(api_key=Mistral_key)
+    mistral = MistralClient(api_key=Mistral_key)
     messages = [{"role": "system", "content": "Ты игрок в слова. Отвечай одним словом на русском языке на последнюю букву слова пользователя (если ъ,ь,ы - то предпоследнюю). Не повторяй свои предыдущие слова."}]
     
     def get_last_letter(word):
@@ -104,12 +106,18 @@ def main():
         used_words.add(word)
         messages.append({"role": "user", "content": word})
         
-        res = mistral.chat.complete(model="mistral-small-latest", messages=messages, stream=False)
+        res = mistral.chat(
+            model="mistral-small-latest",
+            messages=messages
+        )
         bot_word = res.choices[0].message.content.lower()
         
         if bot_word in used_words:
             messages.append({"role": "user", "content": f"Слово '{bot_word}' уже было. Напиши другое слово."})
-            res = mistral.chat.complete(model="mistral-small-latest", messages=messages, stream=False)
+            res = mistral.chat(
+                model="mistral-small-latest",
+                messages=messages
+            )
             bot_word = res.choices[0].message.content.lower()
         
         used_words.add(bot_word)
