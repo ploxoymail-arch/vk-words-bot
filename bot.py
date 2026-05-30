@@ -6,7 +6,6 @@ import asyncio
 import dotenv
 import os
 from mistralai.client import MistralClient
-from mistralai.models import UserMessage
 import requests
 import re
 
