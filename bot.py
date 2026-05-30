@@ -5,10 +5,8 @@ from aiohttp import TCPConnector
 import asyncio
 import dotenv
 import os
-from mistralai.client import Mistral
-import requests
-
-
+from mistralai import Mistral
+import re  # Модуль для проверки, что слово состоит только из русских букв
 
 def main():
     dotenv.load_dotenv()
@@ -27,9 +25,7 @@ def main():
         )
     )
     
-    response = requests.get("https://raw.githubusercontent.com/danakt/russian-words/master/russian.txt")
-    russian_words = set(word.lower().strip() for word in response.text.split('\n') if word.strip())
-    
+    # Словарь больше не загружаем!
     is_game_started = False
     used_words = set()
     last_bot_word = None
@@ -42,10 +38,31 @@ def main():
                 return i
         return None
     
+    def is_likely_russian_noun(word):
+        """Проверяет, похоже ли слово на русское существительное"""
+        # Слишком короткие или длинные
+        if len(word) < 2 or len(word) > 15:
+            return False
+        
+        # Только русские буквы
+        if not re.match(r'^[а-яё]+$', word.lower()):
+            return False
+        
+        # Окончания прилагательных и причастий (НЕ существительные)
+        bad_endings = ('ый', 'ий', 'ой', 'ая', 'яя', 'ое', 'ее', 'ые', 'ие',
+                       'ого', 'ему', 'им', 'ом', 'ую', 'ых', 'ыми',
+                       'вший', 'вшая', 'вшее', 'вшие', 'вшим')
+        
+        if word.endswith(bad_endings):
+            return False
+        
+        # Все остальные слова считаем существительными
+        return True
+    
     @client.on.private_message(text="/start")
     async def start_game(message):
         nonlocal is_game_started, used_words, last_bot_word, messages
-        messages = [messages[0]] 
+        messages = [messages[0]]
         used_words.clear()
         last_bot_word = None
         is_game_started = True     
@@ -71,8 +88,9 @@ def main():
             await message.answer('Одно слово, длиннее 1 буквы.')
             return
         
-        if word not in russian_words:
-            await message.answer('Нет такого слова.')
+        # Проверяем, похоже ли слово на существительное
+        if not is_likely_russian_noun(word):
+            await message.answer('Нужно русское существительное.')
             return
         
         if word in used_words:
