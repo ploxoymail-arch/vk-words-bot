@@ -5,7 +5,7 @@ from aiohttp import TCPConnector
 import asyncio
 import dotenv
 import os
-from mistralai import Mistral
+from mistralai.client import MistralClient
 import re  # Модуль для проверки, что слово состоит только из русских букв
 
 def main():
