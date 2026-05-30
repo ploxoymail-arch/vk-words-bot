@@ -3,5 +3,3 @@ aiohttp
 python-dotenv
 mistralai
 requests
-dotenv
-asyncio
